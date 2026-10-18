@@ -285,7 +285,12 @@ namespace
             ImGui::TableSetupColumn(T("Taste(n)", "Key(s)"), ImGuiTableColumnFlags_WidthStretch, 1.1f);
             ImGui::TableSetupColumn(T("Spieltext", "Game text"), ImGuiTableColumnFlags_WidthStretch, 1.0f);
             ImGui::TableSetupColumn(T("Eigener Text", "Own text"), ImGuiTableColumnFlags_WidthStretch, 1.3f);
-            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, 74);
+            // Button column: wide enough for "X" + "überall" (new rows) or "Original" (game rows) in either language.
+            const ImGuiStyle& style = ImGui::GetStyle();
+            const float smallButton = style.FramePadding.x * 2;
+            const float buttonColumn = (std::max)(ImGui::CalcTextSize("X").x + ImGui::CalcTextSize(T("überall", "all")).x + 2 * smallButton + style.ItemSpacing.x,
+                                                ImGui::CalcTextSize("Original").x + smallButton) + 6;
+            ImGui::TableSetupColumn("", ImGuiTableColumnFlags_WidthFixed, buttonColumn);
             ImGui::TableNextRow(ImGuiTableRowFlags_Headers);
             const char* headerTips[][2] = {
                 { "Haken weg = die Zeile wird im Spiel ausgeblendet.", "Untick = the row is hidden in the game." },
