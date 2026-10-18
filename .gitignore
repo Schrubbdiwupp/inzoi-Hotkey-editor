@@ -1,0 +1,7 @@
+bin/
+obj/
+.vs/
+*.user
+# runtime files of the app
+data/
+f6editor.ini
