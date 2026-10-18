@@ -1,0 +1,1 @@
+# inzoi-Hotkey-editor
