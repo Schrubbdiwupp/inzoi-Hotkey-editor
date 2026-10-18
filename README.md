@@ -63,4 +63,8 @@ Braucht `retoc.exe`, `UAssetGUI.exe`, eine zur Spielversion passende `.usmap` un
 
 Beim ersten Start sucht die App Spiel (Steam), Mod-Ordner und Werkzeuge selbst und öffnet die **Einstellungen**, falls etwas fehlt. Jeder Pfad hat einen `...`-Knopf, die Sprache folgt Windows oder wird per `DE`/`EN` umgeschaltet. Überall gibt es Tooltips.
 
-Made by **Schrubbi** (Schrubbdiwupp).
+Made by **Schrubbi** (Schrubbdiwupp) · MIT License (see `LICENSE`, third-party notices in `THIRD_PARTY_LICENSES.txt`).
+
+## Download
+
+Ready-to-use exe: see [Releases](https://github.com/Schrubbdiwupp/inzoi-Hotkey-editor/releases). Unzip anywhere, start `F6Editor.exe`. / Fertige exe unter *Releases*: entpacken, `F6Editor.exe` starten.

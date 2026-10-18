@@ -5,3 +5,4 @@ obj/
 # runtime files of the app
 data/
 f6editor.ini
+release/
