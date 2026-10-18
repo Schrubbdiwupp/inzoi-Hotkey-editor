@@ -5,7 +5,7 @@
 A small Windows tool for **inZOI** modders and players:
 
 - **Mod hotkeys** – lists the hotkeys of **all installed UI mods**, shows **duplicates**, and lets you give any mod a new key combination **with Ctrl / Alt / Shift** (e.g. `Shift+F2`). Press the keys, click *Apply*, done.
-- **Key guide (F6)** – edit the texts of the in-game key guide and hide rows. The tool builds an override pak for the `~mods` folder.
+- **Key guide (F6)** – edit the texts of the in-game key guide, hide rows and **add your own rows with real key icons** (e.g. `[Shift] + [F2]  Liveslider`) – one click adds all your mod hotkeys. The tool builds an override pak for the `~mods` folder.
 
 ## Mod hotkeys – how it works
 
@@ -30,7 +30,7 @@ Needs (not included – get them from their authors / the inZOI modding communit
 | mapping file `.usmap` matching your game version | inZOI modding community / UE4SS dump |
 | the game's AES key | inZOI modding community |
 
-Steps: *Load original from game* → edit texts / untick rows → *Install* → start the game. *Remove override* brings the original back. After an inZOI update just load the original again; your changes are kept.
+Steps: *Load original from game* → edit texts / untick rows / *+ Add row* or *Add mod hotkeys* → *Install* → start the game. The normal F6 menu is the **top view** page; new rows go on all pages by default. *Remove override* brings the original back. After an inZOI update just load the original again; your changes are kept.
 
 ## Settings
 
@@ -49,7 +49,7 @@ Command line (no window): `F6Editor.exe --load | --install | --remove | --hotkey
 Ein kleines Windows-Werkzeug für **inZOI**:
 
 - **Mod-Hotkeys** – listet die Tasten **aller installierten UI-Mods**, zeigt **doppelte Belegungen** und gibt jedem Mod per Tastendruck eine neue Kombination **mit Strg / Alt / Shift** (z. B. `Shift+F2`).
-- **Tastenhilfe (F6)** – Texte der Tastenhilfe im Spiel ändern und Zeilen ausblenden. Das Werkzeug baut dafür ein Override-Pak für den `~mods`-Ordner.
+- **Tastenhilfe (F6)** – Texte der Tastenhilfe im Spiel ändern, Zeilen ausblenden und **eigene Zeilen mit echten Tastensymbolen hinzufügen** (z. B. `[Shift] + [F2]  Liveslider`) – ein Klick übernimmt alle Mod-Hotkeys. Das Werkzeug baut dafür ein Override-Pak für den `~mods`-Ordner.
 
 ### Mod-Hotkeys
 
@@ -57,7 +57,7 @@ Jeder UI-Mod hat eine Klartext-Datei `ui/<app>/uimod_manifest.json` mit seinem `
 
 ### Tastenhilfe (F6)
 
-Braucht `retoc.exe`, `UAssetGUI.exe`, eine zur Spielversion passende `.usmap` und den AES-Schlüssel des Spiels (nicht enthalten, siehe Tabelle oben). Ablauf: *Original aus Spiel laden* → Texte ändern / Haken entfernen → *Ins Spiel* → Spiel starten. *Override entfernen* stellt das Original wieder her.
+Braucht `retoc.exe`, `UAssetGUI.exe`, eine zur Spielversion passende `.usmap` und den AES-Schlüssel des Spiels (nicht enthalten, siehe Tabelle oben). Ablauf: *Original aus Spiel laden* → Texte ändern / Haken entfernen / *+ Zeile hinzufügen* oder *Mod-Tasten übernehmen* → *Ins Spiel* → Spiel starten. Das normale F6-Menü ist die Seite **Draufsicht**. *Override entfernen* stellt das Original wieder her.
 
 ### Einstellungen
 
