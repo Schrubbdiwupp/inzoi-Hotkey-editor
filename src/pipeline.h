@@ -62,7 +62,7 @@ namespace Pipeline
     // Extracts the original widget from the game and converts it to original.json.
     bool ExtractOriginal(const Settings& s, std::vector<std::string>& log);
     // modified.json -> .uasset -> IoStore pak -> ~mods\F6Editor (old files go to backups first).
-    bool BuildAndInstall(const Settings& s, const std::string& modifiedJson, std::vector<std::string>& log);
+    bool BuildAndInstall(const Settings& s, const std::string& modifiedJson, std::vector<std::string>& log, bool install = true);
     // Moves the installed override to the backups (game uses the original again).
     bool RemoveOverride(const Settings& s, std::vector<std::string>& log);
     bool OverrideInstalled(const Settings& s);

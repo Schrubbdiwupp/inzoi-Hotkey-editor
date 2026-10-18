@@ -57,6 +57,10 @@ namespace Hotkeys
 
     // Key capture: ImGui key -> UE key name ("" = not allowed as hotkey).
     std::string KeyNameFromImGui(int imguiKey);
+    // UE key name -> label in the UI language ("Delete" -> "Entf" / "Del", "One" -> "1").
+    std::string KeyLabel(const std::string& keyName);
+    // Combo -> UE key names for a key guide row: {"LeftShift", "F2"}.
+    std::vector<std::string> ComboKeys(const HotkeyCombo& combo);
 }
 
 namespace HotkeysTab

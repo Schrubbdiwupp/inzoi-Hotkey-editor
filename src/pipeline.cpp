@@ -451,7 +451,7 @@ namespace Pipeline
         return true;
     }
 
-    bool BuildAndInstall(const Settings& s, const std::string& modifiedJson, std::vector<std::string>& log)
+    bool BuildAndInstall(const Settings& s, const std::string& modifiedJson, std::vector<std::string>& log, bool install)
     {
         std::string mapping;
         if (!InstallMapping(s, mapping, log)) return false;
@@ -478,6 +478,11 @@ namespace Pipeline
                 return false;
             }
 
+        if (!install)
+        {
+            log.push_back(std::string(T("Gebaut (nicht installiert): ", "Built (not installed): ")) + outDir);
+            return true;
+        }
         log.push_back(T("3/3 Ins Spiel legen ...", "3/3 Installing into the game ..."));
         if (!BackupInstalled(s, log)) return false;
         fs::create_directories(P(s.ModDir()), ec);

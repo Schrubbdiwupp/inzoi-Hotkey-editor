@@ -1,5 +1,6 @@
 #include "editor_ui.h"
 
+#include <algorithm>
 #include <filesystem>
 
 #include "hotkeys.h"
@@ -16,6 +17,7 @@ namespace
     Settings& settings = AppSettings();
     WidgetAsset asset;
     ChangeMap changes;
+    NewRows newRows;
     std::string loadError;
     int selectedPage = 0;
     int seenJobs = 0;
@@ -51,14 +53,14 @@ namespace
             return;
         }
         if (!asset.Load(settings.OriginalJson(), settings.EnglishTexts(), loadError)) return;
-        LoadChanges(settings.ChangesJson(), changes);
+        LoadChanges(settings.ChangesJson(), changes, newRows);
         if (selectedPage >= static_cast<int>(asset.Pages().size())) selectedPage = 0;
     }
 
     void SaveIfDirty()
     {
         if (!changesDirty) return;
-        SaveChanges(settings.ChangesJson(), changes);
+        SaveChanges(settings.ChangesJson(), changes, newRows);
         changesDirty = false;
     }
 
@@ -66,7 +68,7 @@ namespace
     {
         int n = 0;
         for (const auto& [id, c] : changes) if (!c.Empty()) ++n;
-        return n;
+        return n + static_cast<int>(newRows.size());
     }
 
     void StartInstall()
@@ -74,15 +76,110 @@ namespace
         SaveIfDirty();
         const Settings s = settings;
         const ChangeMap c = changes;
+        const NewRows nr = newRows;
         WidgetAsset* a = &asset;
-        Pipeline::RunAsync(T("Ins Spiel", "Install"), [s, c, a](std::vector<std::string>& log) {
+        Pipeline::RunAsync(T("Ins Spiel", "Install"), [s, c, nr, a](std::vector<std::string>& log) {
             std::string error;
             const std::string modified = s.dataDir + "\\geaendert.json";
-            const int n = a->WriteModified(c, modified, error);
+            const int n = a->WriteModified(c, nr, modified, error);
             if (n < 0) { log.push_back(std::string(T("FEHLER: ", "ERROR: ")) + error); return false; }
-            log.push_back(std::to_string(n) + T(" Zeile(n) geändert.", " row(s) changed."));
+            log.push_back(std::to_string(n) + T(" Zeile(n) geändert oder hinzugefügt.", " row(s) changed or added."));
             return Pipeline::BuildAndInstall(s, modified, log);
         });
+    }
+
+    // "+ Add row" popup
+    bool openAddPopup = false;
+    HotkeyCombo addCombo;
+    std::string addText;
+    bool addAllPages = true;
+
+    bool HasNewRow(const std::string& page, const std::vector<std::string>& keys)
+    {
+        return std::any_of(newRows.begin(), newRows.end(), [&](const NewRow& r) { return r.page == page && r.keys == keys; });
+    }
+
+    // Adds the row on one page or on all pages (skips pages that already have a row with these keys).
+    int AddNewRow(const std::string& page, const std::vector<std::string>& keys, const std::string& text, bool allPages)
+    {
+        int added = 0;
+        for (const GuidePage& p : asset.Pages())
+        {
+            if (!allPages && p.id != page) continue;
+            if (HasNewRow(p.id, keys)) continue;
+            newRows.push_back(NewRow{ p.id, keys, text });
+            ++added;
+        }
+        changesDirty = true;
+        return added;
+    }
+
+    void AddModHotkeys()
+    {
+        std::string error;
+        int rows = 0, mods = 0;
+        for (const HotkeyEntry& e : Hotkeys::Scan(settings, error))
+        {
+            if (!e.Active() || e.combo.Empty()) continue;
+            const int added = AddNewRow("", Hotkeys::ComboKeys(e.combo), e.modName, true);
+            rows += added;
+            if (added) ++mods;
+        }
+        const std::string message = error.empty()
+            ? std::to_string(mods) + T(" Mod-Taste(n) übernommen, ", " mod hotkey(s) added, ") + std::to_string(rows) +
+              T(" Zeilen auf allen Seiten. \"Ins Spiel\" nicht vergessen.", " rows on all pages. Don't forget \"Install\".")
+            : std::string(T("FEHLER: ", "ERROR: ")) + error;
+        Pipeline::RunAsync(T("Mod-Tasten übernehmen", "Add mod hotkeys"), [message](std::vector<std::string>& log) {
+            log.push_back(message);
+            return true;
+        });
+    }
+
+    void DrawAddPopup(const std::string& page)
+    {
+        const std::string title = std::string(T("Neue Zeile", "New row")) + "###addrow";
+        if (openAddPopup) { ImGui::OpenPopup(title.c_str()); openAddPopup = false; }
+        ImGui::SetNextWindowSize(ImVec2(600, 0));
+        if (!ImGui::BeginPopupModal(title.c_str(), nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoSavedSettings)) return;
+        const ImGuiIO& io = ImGui::GetIO();
+
+        ImGui::TextWrapped("%s", T("1. Taste drücken (gern mit Strg / Alt / Shift):", "1. Press the key (Ctrl / Alt / Shift welcome):"));
+        if (!ImGui::IsAnyItemActive())   // typing in the text field must not change the key
+            for (int k = ImGuiKey_NamedKey_BEGIN; k < ImGuiKey_NamedKey_END; ++k)
+            {
+                if (!ImGui::IsKeyPressed(static_cast<ImGuiKey>(k), false)) continue;
+                const std::string name = Hotkeys::KeyNameFromImGui(k);
+                if (name.empty()) continue;
+                addCombo.key = name;
+                addCombo.ctrl = io.KeyCtrl;
+                addCombo.alt = io.KeyAlt;
+                addCombo.shift = io.KeyShift;
+            }
+        ImGui::SetWindowFontScale(1.6f);
+        ImGui::TextColored(addCombo.Empty() ? Muted : ImVec4(1, 1, 1, 1), "%s",
+                           addCombo.Empty() ? "..." : KeysDisplay(Hotkeys::ComboKeys(addCombo)).c_str());
+        ImGui::SetWindowFontScale(1.0f);
+
+        ImGui::Spacing();
+        ImGui::TextUnformatted(T("2. Text:", "2. Text:"));
+        ImGui::SetNextItemWidth(-1);
+        ImGui::InputTextWithHint("##addtext", T("z. B. Animation Player", "e.g. Animation Player"), &addText);
+        ImGui::Checkbox(T("Auf allen Seiten (empfohlen)", "On all pages (recommended)"), &addAllPages);
+        Tip("Die Tastenhilfe hat je Kamera eine Seite. Das normale F6-Menü ist die Draufsicht - mit Haken erscheint die Zeile überall.",
+            "The key guide has one page per camera. The normal F6 menu is the top view - ticked, the row appears everywhere.");
+
+        ImGui::Separator();
+        ImGui::BeginDisabled(addCombo.Empty() || addText.empty());
+        if (ImGui::Button(T("Hinzufügen", "Add"), ImVec2(140, 0)))
+        {
+            AddNewRow(page, Hotkeys::ComboKeys(addCombo), addText, addAllPages);
+            ImGui::CloseCurrentPopup();
+        }
+        ImGui::EndDisabled();
+        Tip("Danach \"Ins Spiel\" klicken, damit es im Spiel erscheint.", "Then click \"Install\" so it shows up in the game.");
+        ImGui::SameLine();
+        if (ImGui::Button(T("Abbrechen", "Cancel"), ImVec2(120, 0)) || ImGui::IsKeyPressed(ImGuiKey_Escape)) ImGui::CloseCurrentPopup();
+        ImGui::EndPopup();
     }
 
     void DrawToolbar()
@@ -165,6 +262,19 @@ namespace
         ImGui::SameLine();
         ImGui::TextColored(Muted, "  %d %s", static_cast<int>(page.rows.size()),
                            T("Zeilen  -  eigener Text leer = Spieltext bleibt", "rows  -  empty own text = game text stays"));
+
+        if (ImGui::Button(T("+ Zeile hinzufügen", "+ Add row")))
+        {
+            addCombo = HotkeyCombo();
+            addText.clear();
+            openAddPopup = true;
+        }
+        Tip("Neue Zeile mit eigener Taste (auch Strg / Alt / Shift) und Text, z. B. für einen Mod.",
+            "New row with your own key (also Ctrl / Alt / Shift) and text, e.g. for a mod.");
+        ImGui::SameLine();
+        if (ImGui::Button(T("Mod-Tasten übernehmen", "Add mod hotkeys"))) AddModHotkeys();
+        Tip("Fügt für jeden aktiven Mod mit Hotkey eine Zeile hinzu (Taste + Mod-Name) - auf allen Seiten. Schon vorhandene werden übersprungen, die Texte kannst du danach ändern.",
+            "Adds a row for every active mod with a hotkey (key + mod name) - on all pages. Existing ones are skipped; you can edit the texts afterwards.");
         ImGui::Spacing();
 
         if (ImGui::BeginTable("rows", 5, ImGuiTableFlags_RowBg | ImGuiTableFlags_BordersInnerH | ImGuiTableFlags_SizingStretchProp |
@@ -238,8 +348,54 @@ namespace
                 }
                 ImGui::PopID();
             }
+
+            // Added rows of this page (shown below the game's rows, like in the game).
+            int removeIndex = -1;
+            bool removeEverywhere = false;
+            for (int i = 0; i < static_cast<int>(newRows.size()); ++i)
+            {
+                NewRow& row = newRows[static_cast<size_t>(i)];
+                if (row.page != page.id) continue;
+                ImGui::PushID(i + 100000);
+                ImGui::TableNextRow(0, 34);
+                ImGui::TableNextColumn();
+                ImGui::AlignTextToFramePadding();
+                ImGui::SetCursorPosX(ImGui::GetCursorPosX() + 14);
+                ImGui::TextColored(Accent, "%s", T("neu", "new"));
+                Tip("Von dir hinzugefügte Zeile.", "Row added by you.");
+
+                ImGui::TableNextColumn();
+                ImGui::AlignTextToFramePadding();
+                ImGui::TextColored(Accent, "%s", KeysDisplay(row.keys).c_str());
+
+                ImGui::TableNextColumn();
+                ImGui::AlignTextToFramePadding();
+                ImGui::TextColored(Muted, "-");
+
+                ImGui::TableNextColumn();
+                ImGui::SetNextItemWidth(-1);
+                if (ImGui::InputTextWithHint("##newtext", T("Text der Zeile", "row text"), &row.text)) changesDirty = true;
+
+                ImGui::TableNextColumn();
+                if (ImGui::SmallButton("X")) removeIndex = i;
+                Tip("Zeile auf dieser Seite entfernen.", "Remove the row on this page.");
+                ImGui::SameLine();
+                if (ImGui::SmallButton(T("überall", "all"))) { removeIndex = i; removeEverywhere = true; }
+                Tip("Diese Zeile (gleiche Taste) auf allen Seiten entfernen.", "Remove this row (same key) on all pages.");
+                ImGui::PopID();
+            }
+            if (removeIndex >= 0)
+            {
+                const std::vector<std::string> keys = newRows[static_cast<size_t>(removeIndex)].keys;
+                if (removeEverywhere)
+                    newRows.erase(std::remove_if(newRows.begin(), newRows.end(), [&](const NewRow& r) { return r.keys == keys; }), newRows.end());
+                else
+                    newRows.erase(newRows.begin() + removeIndex);
+                changesDirty = true;
+            }
             ImGui::EndTable();
         }
+        DrawAddPopup(page.id);
         ImGui::EndChild();
     }
 

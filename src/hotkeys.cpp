@@ -113,8 +113,7 @@ std::string HotkeyCombo::Canonical() const
 std::string HotkeyCombo::Display() const
 {
     if (key.empty()) return "-";
-    const auto label = KeyLabels.find(key);
-    return ModifierText(ctrl, alt, shift) + (label != KeyLabels.end() ? T(label->second.de, label->second.en) : key);
+    return ModifierText(ctrl, alt, shift) + Hotkeys::KeyLabel(key);
 }
 
 namespace Hotkeys
@@ -326,6 +325,22 @@ namespace Hotkeys
                          : std::string(T("FEHLER: Neu laden im Spiel hat nicht geklappt - der Mod ist evtl. bis zum nächsten Spielstart entladen. Nach dem Neustart gilt die neue Taste.",
                                          "ERROR: reloading in the game failed - the mod may be unloaded until the next game start. After a restart the new key works.")));
         return ok;
+    }
+
+    std::string KeyLabel(const std::string& keyName)
+    {
+        const auto label = KeyLabels.find(keyName);
+        return label != KeyLabels.end() ? T(label->second.de, label->second.en) : keyName;
+    }
+
+    std::vector<std::string> ComboKeys(const HotkeyCombo& combo)
+    {
+        std::vector<std::string> keys;
+        if (combo.ctrl) keys.push_back("LeftControl");
+        if (combo.alt) keys.push_back("LeftAlt");
+        if (combo.shift) keys.push_back("LeftShift");
+        if (!combo.key.empty()) keys.push_back(combo.key);
+        return keys;
     }
 
     std::string KeyNameFromImGui(int imguiKey)

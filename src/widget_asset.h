@@ -24,7 +24,17 @@ struct GuidePage
     std::string id;            // ObjectName of the page's VerticalBox
     std::string titleDe, titleEn;   // display names
     std::vector<GuideRow> rows;
+    int panelExport = 0;       // its Panel_Guide* VerticalBox (new rows go there)
 };
+
+// An added row: key symbols (fixed keys, UE names like "LeftShift", "F2") followed by a text.
+struct NewRow
+{
+    std::string page;          // GuidePage::id
+    std::vector<std::string> keys;
+    std::string text;
+};
+using NewRows = std::vector<NewRow>;
 
 struct RowChange
 {
@@ -44,8 +54,9 @@ public:
     const std::vector<GuidePage>& Pages() const { return pages; }
     bool Loaded() const { return !pages.empty(); }
 
-    // Writes a copy of the original with the changes applied. Returns the number of changed rows.
-    int WriteModified(const ChangeMap& changes, const std::string& outPath, std::string& error) const;
+    // Writes a copy of the original with the changes applied and the new rows added.
+    // Returns the number of changed + added rows, -1 on error.
+    int WriteModified(const ChangeMap& changes, const NewRows& newRows, const std::string& outPath, std::string& error) const;
 
 private:
     Json asset;
@@ -53,5 +64,8 @@ private:
     std::map<std::string, std::string> englishTexts;
 };
 
-bool LoadChanges(const std::string& path, ChangeMap& changes);
-bool SaveChanges(const std::string& path, const ChangeMap& changes);
+bool LoadChanges(const std::string& path, ChangeMap& changes, NewRows& newRows);
+bool SaveChanges(const std::string& path, const ChangeMap& changes, const NewRows& newRows);
+
+// "Shift + F2" style text for a key list, in the UI language.
+std::string KeysDisplay(const std::vector<std::string>& keys);

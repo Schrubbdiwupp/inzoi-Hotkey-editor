@@ -117,27 +117,29 @@ namespace
                 log.push_back(e.combo.Display() + " | " + e.modName + (e.Active() ? "" : " (aus)") + " | " + e.app + " | " + e.mountId);
             ok = error.empty();
         }
-        else if (command == L"--ins-spiel" || command == L"--install")
+        else if (command == L"--ins-spiel" || command == L"--install" || command == L"--build")
         {
+            const bool install = command != L"--build";   // --build: pak in <data>\out, game folder untouched
             WidgetAsset asset;
             ChangeMap changes;
+            NewRows newRows;
             std::string error;
             if (!asset.Load(s.OriginalJson(), s.EnglishTexts(), error)) log.push_back("FEHLER: " + error);
             else
             {
-                LoadChanges(s.ChangesJson(), changes);
+                LoadChanges(s.ChangesJson(), changes, newRows);
                 const std::string modified = s.dataDir + "\\geaendert.json";
-                const int n = asset.WriteModified(changes, modified, error);
+                const int n = asset.WriteModified(changes, newRows, modified, error);
                 if (n < 0) log.push_back("FEHLER: " + error);
                 else
                 {
                     log.push_back(std::to_string(n) + " Zeile(n) geändert.");
-                    ok = Pipeline::BuildAndInstall(s, modified, log);
+                    ok = Pipeline::BuildAndInstall(s, modified, log, install);
                 }
             }
         }
         else
-            log.push_back("Unknown command. Allowed: --load, --install, --remove, --hotkeys");
+            log.push_back("Unknown command. Allowed: --load, --install, --build, --remove, --hotkeys");
 
         std::error_code ec;
         std::filesystem::create_directories(std::filesystem::u8path(s.dataDir), ec);
