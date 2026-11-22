@@ -7,6 +7,9 @@ A small Windows tool for **inZOI** modders and players:
 - **Mod hotkeys** – lists the hotkeys of **all installed UI mods**, shows **duplicates**, and lets you give any mod a new key combination **with Ctrl / Alt / Shift** (e.g. `Shift+F2`). Press the keys, click *Apply*, done.
 - **Key guide (F6)** – edit the texts of the in-game key guide, hide rows and **add your own rows with real key icons** (e.g. `[Shift] + [F2]  Liveslider`) – one click adds all your mod hotkeys. The tool builds an override pak for the `~mods` folder.
 
+> **Good to know:** the **Mod hotkeys** tab needs **nothing** but your mods folder – no .usmap, no AES key, no extra tools.
+> Those are **only** needed for the optional F6 key guide editor.
+
 ## Mod hotkeys – how it works
 
 Every UI mod has a plain-text `ui/<app>/uimod_manifest.json` with its `keybind` trigger. This file is **not** part of the mod's checksum list, so it can be changed safely. The editor:
@@ -19,22 +22,22 @@ Every UI mod has a plain-text `ui/<app>/uimod_manifest.json` with its `keybind` 
 
 Only `Ctrl`, `Alt` and `Shift` are allowed as modifiers and the combination must match exactly – `Shift+F2` and `F2` can belong to two different mods.
 
-## Key guide (F6)
+## Key guide (F6) – optional
 
-Needs (not included – get them from their authors / the inZOI modding community):
+Only this part needs extra tools (not included):
 
-| What | Where |
+| What | How to get it |
 |---|---|
 | `retoc.exe` | https://github.com/trumank/retoc/releases |
 | `UAssetGUI.exe` | https://github.com/atenfyr/UAssetGUI/releases |
-| mapping file `.usmap` matching your game version | inZOI modding community / UE4SS dump |
-| the game's AES key | inZOI modding community |
+| mapping file `.usmap` matching your game version | Install [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS/releases), start the game, press **Ctrl + Num 6**. The file appears in `...\BlueClient\Binaries\Win64\ue4ss\` – click *Find automatically* in the settings and the app picks it up. Make a new one after every inZOI update. |
+| the game's AES key | Drag `inZOI-Win64-Shipping.exe` (in `...\BlueClient\Binaries\Win64\`) onto [AESDumpster](https://github.com/GHFear/AESDumpster/releases) and paste the key (`0x...`) into the settings. |
 
 Steps: *Load original from game* → edit texts / untick rows / *+ Add row* or *Add mod hotkeys* → *Install* → start the game. The normal F6 menu is the **top view** page; new rows go on all pages by default. *Remove override* brings the original back. After an inZOI update just load the original again; your changes are kept.
 
 ## Settings
 
-On the first start the app looks for the game (Steam libraries), the mods folder and the tools next to the exe, and opens the **Settings** tab if something is missing. Every path has a `...` button. Language: German / English (follows Windows, switch with the `EN`/`DE` tab). Settings are stored in `f6editor.ini` next to the exe, working files in `data\`.
+On the first start the app looks for the game (Steam libraries), the mods folder, the tools next to the exe and a UE4SS-made .usmap in the game folder. It only opens the **Settings** tab if the mods folder is missing – the F6 tools are optional and shown in grey when missing. Every path has a `...` button. Language: German / English (follows Windows, switch with the `EN`/`DE` tab). Settings are stored in `f6editor.ini` next to the exe, working files in `data\`.
 
 ## Building
 
@@ -57,7 +60,11 @@ Jeder UI-Mod hat eine Klartext-Datei `ui/<app>/uimod_manifest.json` mit seinem `
 
 ### Tastenhilfe (F6)
 
-Braucht `retoc.exe`, `UAssetGUI.exe`, eine zur Spielversion passende `.usmap` und den AES-Schlüssel des Spiels (nicht enthalten, siehe Tabelle oben). Ablauf: *Original aus Spiel laden* → Texte ändern / Haken entfernen / *+ Zeile hinzufügen* oder *Mod-Tasten übernehmen* → *Ins Spiel* → Spiel starten. Das normale F6-Menü ist die Seite **Draufsicht**. *Override entfernen* stellt das Original wieder her.
+**Optional.** Nur dieser Teil braucht zusätzlich `retoc.exe`, `UAssetGUI.exe`, eine zur Spielversion passende `.usmap` und den AES-Schlüssel des Spiels (nicht enthalten). Für die Mod-Hotkeys brauchst du davon **nichts**.
+- **.usmap:** [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS/releases) installieren, Spiel starten, **Strg + Num 6** drücken. Die Datei landet in `...\BlueClient\Binaries\Win64\ue4ss\`, in den Einstellungen auf *Automatisch suchen* klicken. Nach jedem inZOI-Update neu erzeugen.
+- **AES-Schlüssel:** `inZOI-Win64-Shipping.exe` auf [AESDumpster](https://github.com/GHFear/AESDumpster/releases) ziehen und den Schlüssel (`0x...`) in den Einstellungen einfügen.
+
+Ablauf: *Original aus Spiel laden* → Texte ändern / Haken entfernen / *+ Zeile hinzufügen* oder *Mod-Tasten übernehmen* → *Ins Spiel* → Spiel starten. Das normale F6-Menü ist die Seite **Draufsicht**. *Override entfernen* stellt das Original wieder her.
 
 ### Einstellungen
 

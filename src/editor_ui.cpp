@@ -22,7 +22,8 @@ namespace
     int selectedPage = 0;
     int seenJobs = 0;
     bool changesDirty = false;
-    bool openSettingsTab = false;   // first start with missing paths
+    bool openSettingsTab = false;   // first start with missing mods folder
+    bool openHotkeysTab = false;    // key guide tools missing: start on the mod hotkeys tab
     bool lastEnglish = false;
 
     const ImVec4 Accent = ImVec4(0.96f, 0.55f, 0.20f, 1.0f);   // Klappkatz orange
@@ -42,8 +43,8 @@ namespace
         std::error_code ec;
         if (!Check::KeyGuideReady(settings))
         {
-            loadError = T("Für die Tastenhilfe fehlen noch Pfade - bitte im Reiter \"Einstellungen\" ergänzen.",
-                          "Some paths for the key guide are still missing - please fill them in on the \"Settings\" tab.");
+            loadError = T("Die Tastenhilfe (F6) ist ein Zusatz und braucht retoc, UAssetGUI, eine .usmap und den AES-Schlüssel (siehe \"Einstellungen\").\nDer Reiter \"Mod-Hotkeys\" funktioniert auch ohne diese Werkzeuge.",
+                          "The key guide (F6) is an extra and needs retoc, UAssetGUI, a .usmap and the AES key (see \"Settings\").\nThe \"Mod hotkeys\" tab works without these tools.");
             return;
         }
         if (!std::filesystem::exists(std::filesystem::u8path(settings.OriginalJson()), ec))
@@ -432,7 +433,9 @@ namespace EditorUi
         // First start (or moved PC): fill what can be found, then show the settings if something is still missing.
         if (!Check::KeyGuideReady(settings) || !Check::Mods(settings).empty())
             if (AutoDetect(settings) > 0) SaveSettings();
-        openSettingsTab = !Check::Mods(settings).empty() || !Check::KeyGuideReady(settings);
+        // Only the mods folder is required. retoc/UAssetGUI/usmap/AES are optional (F6 key guide only).
+        openSettingsTab = !Check::Mods(settings).empty();
+        openHotkeysTab = !openSettingsTab && !Check::KeyGuideReady(settings);
         Reload();
         seenJobs = Pipeline::FinishedJobs();
         lastEnglish = I18n::English();
@@ -510,13 +513,15 @@ namespace EditorUi
                     DrawRows();
                 }
                 else
-                    ImGui::TextColored(loadError.empty() ? Muted : Bad, "%s", loadError.c_str());
+                    ImGui::TextColored(loadError.empty() || !Check::KeyGuideReady(settings) ? Muted : Bad, "%s", loadError.c_str());
                 ImGui::EndChild();
                 ImGui::EndTabItem();
             }
             Tip("Texte der Tastenhilfe ändern und Zeilen ausblenden.", "Change the key guide's texts and hide rows.");
 
-            if (ImGui::BeginTabItem((std::string(T("  Mod-Hotkeys  ", "  Mod hotkeys  ")) + "###hotkeys").c_str()))
+            const ImGuiTabItemFlags hotkeysFlags = openHotkeysTab ? ImGuiTabItemFlags_SetSelected : 0;
+            openHotkeysTab = false;
+            if (ImGui::BeginTabItem((std::string(T("  Mod-Hotkeys  ", "  Mod hotkeys  ")) + "###hotkeys").c_str(), nullptr, hotkeysFlags))
             {
                 const float mainHeight = ImGui::GetContentRegionAvail().y - logHeight - ImGui::GetStyle().ItemSpacing.y;
                 ImGui::BeginChild("hotkeys", ImVec2(0, mainHeight));

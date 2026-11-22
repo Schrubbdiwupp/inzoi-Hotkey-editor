@@ -392,6 +392,12 @@ int AutoDetect(Settings& s)
         // Already installed in UAssetGUI, or lying next to one of the tools.
         std::error_code ec;
         std::vector<fs::path> folders = { P(MappingsFolder()) };
+        if (!s.gameDir.empty())
+        {
+            // UE4SS (Ctrl + Num 6) writes the usmap here.
+            folders.push_back(P(s.gameDir) / "BlueClient" / "Binaries" / "Win64" / "ue4ss");
+            folders.push_back(P(s.gameDir) / "BlueClient" / "Binaries" / "Win64");
+        }
         if (FileExists(s.uassetGuiExe)) folders.push_back(P(s.uassetGuiExe).parent_path());
         if (FileExists(s.retocExe)) folders.push_back(P(s.retocExe).parent_path());
         for (const fs::path& folder : folders)
@@ -399,7 +405,7 @@ int AutoDetect(Settings& s)
             for (const auto& entry : fs::directory_iterator(folder, ec))
             {
                 const std::string name = entry.path().filename().u8string();
-                if (entry.path().extension() == ".usmap" && name.find("BlueClient") != std::string::npos)
+                if (entry.path().extension() == ".usmap" && (name.find("BlueClient") != std::string::npos || name == "Mappings.usmap"))
                 {
                     s.usmapFile = entry.path().u8string();
                     ++found;

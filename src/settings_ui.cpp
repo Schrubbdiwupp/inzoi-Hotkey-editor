@@ -109,6 +109,8 @@ namespace
         ImGui::AlignTextToFramePadding();
         if (problem.empty())
             ImGui::TextColored(value.empty() && optional ? Muted : Good, "%s", value.empty() && optional ? T("nicht genutzt", "not used") : "OK");
+        else if (value.empty() && optional)
+            ImGui::TextColored(Muted, "%s", T("fehlt - nur für F6 nötig", "missing - only needed for F6"));
         else
             ImGui::TextColored(Bad, "%s", problem.c_str());
         ImGui::PopID();
@@ -153,15 +155,20 @@ namespace SettingsTab
             changed |= PathRow("mods", "Mod-Ordner", "Mods folder", s.modsDir, nullptr, nullptr, Check::Mods(s), false,
                                "Wo inZOI die Mods ablegt: Dokumente\\inZOI\\Mods. Daraus liest der Reiter Mod-Hotkeys.",
                                "Where inZOI keeps mods: Documents\\inZOI\\Mods. The mod hotkeys tab reads from here.");
-            changed |= PathRow("retoc", "retoc.exe", "retoc.exe", s.retocExe, L"retoc.exe", L"*.exe", Check::Retoc(s), false,
+            ImGui::TableNextRow();
+            ImGui::TableNextColumn();
+            ImGui::TextColored(Accent, "%s", T("Nur für die Tastenhilfe (F6) - optional:", "Only for the key guide (F6) - optional:"));
+            ImGui::TableNextColumn();
+            ImGui::TextColored(Muted, "%s", T("Der Reiter Mod-Hotkeys braucht nichts davon.", "The mod hotkeys tab needs none of this."));
+            changed |= PathRow("retoc", "retoc.exe", "retoc.exe", s.retocExe, L"retoc.exe", L"*.exe", Check::Retoc(s), true,
                                "Werkzeug zum Auspacken und Packen der Spieldateien (IoStore). Nur für die Tastenhilfe nötig.",
                                "Tool that unpacks and packs the game files (IoStore). Only needed for the key guide.");
-            changed |= PathRow("uassetgui", "UAssetGUI.exe", "UAssetGUI.exe", s.uassetGuiExe, L"UAssetGUI.exe", L"*.exe", Check::UAssetGui(s), false,
+            changed |= PathRow("uassetgui", "UAssetGUI.exe", "UAssetGUI.exe", s.uassetGuiExe, L"UAssetGUI.exe", L"*.exe", Check::UAssetGui(s), true,
                                "Werkzeug, das das Widget in lesbares JSON umwandelt und zurück. Nur für die Tastenhilfe nötig.",
                                "Tool that turns the widget into readable JSON and back. Only needed for the key guide.");
-            changed |= PathRow("usmap", "Mapping-Datei (.usmap)", "Mapping file (.usmap)", s.usmapFile, L"Mappings (*.usmap)", L"*.usmap", Check::Usmap(s), false,
-                               "Beschreibt den Aufbau der Spieldaten (z. B. BlueClient-5.6.1-...usmap). Muss zur Spielversion passen. Die App kopiert sie automatisch in den Mappings-Ordner von UAssetGUI.",
-                               "Describes the layout of the game data (e.g. BlueClient-5.6.1-...usmap). Must match the game version. The app copies it into UAssetGUI's Mappings folder by itself.");
+            changed |= PathRow("usmap", "Mapping-Datei (.usmap)", "Mapping file (.usmap)", s.usmapFile, L"Mappings (*.usmap)", L"*.usmap", Check::Usmap(s), true,
+                               "Nur für F6. Beschreibt den Aufbau der Spieldaten (z. B. BlueClient-5.6.1-...usmap) und muss zur Spielversion passen. Selbst erzeugen: UE4SS installieren, Spiel starten, Strg + Num 6 drücken - die Datei landet in ...\\Binaries\\Win64\\ue4ss\\, die App findet sie dort selbst.",
+                               "Only for F6. Describes the layout of the game data (e.g. BlueClient-5.6.1-...usmap) and must match the game version. Make it yourself: install UE4SS, start the game, press Ctrl + Num 6 - the file appears in ...\\Binaries\\Win64\\ue4ss\\, the app finds it there by itself.");
 
             // AES key: either pasted or read from a file.
             ImGui::PushID("aes");
@@ -169,8 +176,8 @@ namespace SettingsTab
             ImGui::TableNextColumn();
             ImGui::AlignTextToFramePadding();
             ImGui::TextUnformatted(T("AES-Schlüssel", "AES key"));
-            const char* keyTipDe = "Schlüssel der verschlüsselten Spieldateien (0x + 64 Hex-Zeichen). Entweder hier einfügen oder mit ... eine Textdatei wählen, in der er steht.";
-            const char* keyTipEn = "Key of the encrypted game files (0x + 64 hex digits). Paste it here, or pick a text file that contains it with ...";
+            const char* keyTipDe = "Nur für F6. Schlüssel der verschlüsselten Spieldateien (0x + 64 Hex-Zeichen). Hier einfügen oder mit ... eine Textdatei wählen. Selbst auslesen: inZOI-Win64-Shipping.exe auf AESDumpster ziehen (Knopf unten).";
+            const char* keyTipEn = "Only for F6. Key of the encrypted game files (0x + 64 hex digits). Paste it here or pick a text file with ... Read it yourself: drag inZOI-Win64-Shipping.exe onto AESDumpster (button below).";
             Tip(keyTipDe, keyTipEn);
             ImGui::TableNextColumn();
             ImGui::SetNextItemWidth(-1);
@@ -183,6 +190,7 @@ namespace SettingsTab
             ImGui::TableNextColumn();
             ImGui::AlignTextToFramePadding();
             if (const std::string p = Check::Key(s); p.empty()) ImGui::TextColored(Good, "OK");
+            else if (s.aesKey.empty() && s.keyFile.empty()) ImGui::TextColored(Muted, "%s", T("fehlt - nur für F6 nötig", "missing - only needed for F6"));
             else ImGui::TextColored(Bad, "%s", p.c_str());
             ImGui::PopID();
 
@@ -215,13 +223,19 @@ namespace SettingsTab
         ImGui::Spacing();
         ImGui::Separator();
         ImGui::TextColored(Accent, "%s", T("Woher bekomme ich die Werkzeuge?", "Where do I get the tools?"));
-        ImGui::TextWrapped("%s", T("Für den Reiter Mod-Hotkeys brauchst du nur den Mod-Ordner. Für die Tastenhilfe (F6) zusätzlich retoc, UAssetGUI, eine passende Mapping-Datei und den AES-Schlüssel des Spiels - beides gibt es in der inZOI-Modding-Community.",
-                                   "The mod hotkeys tab only needs the mods folder. The key guide (F6) also needs retoc, UAssetGUI, a matching mapping file and the game's AES key - both are available in the inZOI modding community."));
+        ImGui::TextWrapped("%s", T("Für den Reiter Mod-Hotkeys brauchst du NUR den Mod-Ordner - sonst nichts.\n\nNur für die Tastenhilfe (F6) zusätzlich:\n  - retoc und UAssetGUI (Knöpfe unten)\n  - die Mapping-Datei (.usmap): UE4SS installieren, Spiel starten, Strg + Num 6 drücken. Sie landet in ...\\Binaries\\Win64\\ue4ss\\ - dann oben auf \"Automatisch suchen\" klicken.\n  - den AES-Schlüssel: inZOI-Win64-Shipping.exe auf AESDumpster ziehen und den Schlüssel (0x...) oben einfügen.",
+                                   "The mod hotkeys tab needs ONLY the mods folder - nothing else.\n\nOnly for the key guide (F6) you also need:\n  - retoc and UAssetGUI (buttons below)\n  - the mapping file (.usmap): install UE4SS, start the game, press Ctrl + Num 6. It appears in ...\\Binaries\\Win64\\ue4ss\\ - then click \"Find automatically\" above.\n  - the AES key: drag inZOI-Win64-Shipping.exe onto AESDumpster and paste the key (0x...) above."));
         if (ImGui::SmallButton("retoc (GitHub)")) OpenUrl("https://github.com/trumank/retoc/releases");
         Tip("Öffnet die Download-Seite im Browser.", "Opens the download page in your browser.");
         ImGui::SameLine();
         if (ImGui::SmallButton("UAssetGUI (GitHub)")) OpenUrl("https://github.com/atenfyr/UAssetGUI/releases");
         Tip("Öffnet die Download-Seite im Browser.", "Opens the download page in your browser.");
+        ImGui::SameLine();
+        if (ImGui::SmallButton("UE4SS (GitHub)")) OpenUrl("https://github.com/UE4SS-RE/RE-UE4SS/releases");
+        Tip("Für die .usmap: installieren, Spiel starten, Strg + Num 6.", "For the .usmap: install, start the game, press Ctrl + Num 6.");
+        ImGui::SameLine();
+        if (ImGui::SmallButton("AESDumpster (GitHub)")) OpenUrl("https://github.com/GHFear/AESDumpster/releases");
+        Tip("Liest den AES-Schlüssel aus inZOI-Win64-Shipping.exe: die exe auf AESDumpster ziehen.", "Reads the AES key from inZOI-Win64-Shipping.exe: drag the exe onto AESDumpster.");
 
         if (changed) SaveSettings();
         return changed;
